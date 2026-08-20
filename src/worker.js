@@ -11,7 +11,7 @@ const HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JPEG to PDF Editor</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"><\/script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"><\/script>
 <style>
 :root{--bg:#0b0d14;--surface:#161827;--surface-2:#1e2038;--border:#2a2d4a;--text:#e2e4f0;--text-muted:#8b8fa3;--primary:#f48120;--primary-hover:#f6993f;--danger:#ef4444;--success:#22c55e;--radius:10px;--radius-sm:6px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -77,7 +77,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="card-title">Step 1 — Add Images</div>
 <div class="drop-zone" id="dropZone">
 <div class="drop-zone-icon">🖼️</div>
-<div class="drop-zone-text">Drop JPEG files here or click to browse</div>
+<div class="drop-zone-text">Drop JPG or JPEG files here or click to browse</div>
 <div class="drop-zone-sub">Supports .jpg and .jpeg — all processing stays on your device</div>
 <input type="file" id="fileInput" accept=".jpg,.jpeg,image/jpeg" multiple>
 </div>
@@ -126,7 +126,7 @@ function rs(){state.images=state.images.filter(i=>!state.selected.has(i.id));sta
 function ca(){state.images=[];state.selected.clear();r();editorCard.style.display='none';downloadCard.style.display='none';st('Cleared all images','')}
 function r(){
 if(state.images.length){dropZone.classList.add('has-files');dropZone.querySelector('.drop-zone-icon').textContent='📂';dropZone.querySelector('.drop-zone-text').textContent=state.images.length+' image(s) loaded';dropZone.querySelector('.drop-zone-sub').textContent='Drop more to add — click to browse'}
-else{dropZone.classList.remove('has-files');dropZone.querySelector('.drop-zone-icon').textContent='🖼️';dropZone.querySelector('.drop-zone-text').textContent='Drop JPEG files here or click to browse';dropZone.querySelector('.drop-zone-sub').textContent='Supports .jpg and .jpeg — all processing stays on your device'}
+else{dropZone.classList.remove('has-files');dropZone.querySelector('.drop-zone-icon').textContent='🖼️';dropZone.querySelector('.drop-zone-text').textContent='Drop JPG or JPEG files here or click to browse';dropZone.querySelector('.drop-zone-sub').textContent='Supports .jpg and .jpeg — all processing stays on your device'}
 fileList.innerHTML=state.images.map(i=>'<div class="file-item"><img class="thumb" src="'+i.dataUrl+'" alt="'+es(i.name)+'"><div class="info"><div class="name">'+es(i.name)+'</div><div class="size">'+fs(i.size)+'</div></div><button class="remove" data-id="'+i.id+'" title="Remove">✕</button></div>').join('');
 fileList.querySelectorAll('.remove').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.id;state.images=state.images.filter(i=>i.id!==id);state.selected.delete(id);r();if(!state.images.length){editorCard.style.display='none';downloadCard.style.display='none'}}));
 if(state.images.length)editorCard.style.display='block';
@@ -134,7 +134,7 @@ pageGrid.innerHTML=state.images.map((i,idx)=>'<div class="page-card '+(state.sel
 pageGrid.querySelectorAll('canvas').forEach(c=>{const id=c.dataset.id;const img=state.images.find(i=>i.id===id);if(img){const im=new Image();im.onload=()=>{const ctx=c.getContext('2d');const w=c.clientWidth||140;const h=w*1.414;c.width=w*2;c.height=h*2;c.style.width=w+'px';c.style.height=h+'px';ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);const s=Math.min(c.width/im.width,c.height/im.height);ctx.drawImage(im,(c.width-im.width*s)/2,(c.height-im.height*s)/2,im.width*s,im.height*s)};im.src=img.dataUrl}});
 pageGrid.querySelectorAll('.page-card').forEach(c=>c.addEventListener('click',()=>{const id=c.dataset.id;if(state.selected.has(id))state.selected.delete(id);else state.selected.add(id);r();removeSelectedBtn.disabled=!state.selected.size}));
 removeSelectedBtn.disabled=!state.selected.size}
-async function cv(){if(!state.images.length||state.converting)return;state.converting=true;convertBtn.disabled=true;convertBtn.textContent='⏳ Converting...';progressBar.style.display='block';progressFill.style.width='0%';try{const{PDFDocument}=PDFLib;const pdf=await PDFDocument.create();const t=state.images.length;for(let i=0;i<t;i++){const img=state.images[i];const res=await fetch(img.dataUrl);const buf=new Uint8Array(await res.arrayBuffer());const jpg=await pdf.embedJpg(buf);const{width:w,height:h}=jpg;const m=595;let pw,ph;if(w>h){pw=m;ph=(h/w)*m}else{ph=m;pw=(w/h)*m}const pg=pdf.addPage([pw,ph]);pg.drawImage(jpg,{x:0,y:0,width:pw,height:ph});progressFill.style.width=(((i+1)/t)*100)+'%'}const bytes=await pdf.save();const blob=new Blob([bytes],{type:'application/pdf'});const url=URL.createObjectURL(blob);downloadLink.href=url;downloadLink.download=state.images.length===1?state.images[0].name.replace(/\.jpe?g$/i,'')+'.pdf':state.images.length+'-images-converted.pdf';downloadInfo.textContent=state.images.length+' page(s) · '+fs(blob.size);editorCard.style.display='none';downloadCard.style.display='block';st('PDF created successfully!','success')}catch(e){console.error(e);st('Error: '+e.message,'error')}finally{state.converting=false;convertBtn.disabled=false;convertBtn.textContent='📥 Convert to PDF';progressBar.style.display='none'}}
+async function cv(){if(!state.images.length||state.converting)return;state.converting=true;convertBtn.disabled=true;convertBtn.textContent='⏳ Converting...';progressBar.style.display='block';progressFill.style.width='0%';try{const{PDFDocument}=PDFLib;const pdf=await PDFDocument.create();const t=state.images.length;for(let i=0;i<t;i++){const img=state.images[i];const res=await fetch(img.dataUrl);const buf=new Uint8Array(await res.arrayBuffer());const jpg=await pdf.embedJpg(buf);const{width:w,height:h}=jpg;const m=595;let pw,ph;if(w>h){pw=m;ph=(h/w)*m}else{ph=m;pw=(w/h)*m}const pg=pdf.addPage([pw,ph]);pg.drawImage(jpg,{x:0,y:0,width:pw,height:ph});progressFill.style.width=(((i+1)/t)*100)+'%'}const bytes=await pdf.save();const blob=new Blob([bytes],{type:'application/pdf'});const url=URL.createObjectURL(blob);const fname=state.images.length===1?state.images[0].name.replace(/\.jpe?g$/i,'')+'.pdf':state.images.length+'-images-converted.pdf';downloadLink.href=url;downloadLink.download=fname;downloadInfo.textContent=state.images.length+' page(s) · '+fs(blob.size);editorCard.style.display='none';downloadCard.style.display='block';st('PDF created and downloading!','success');const a=document.createElement('a');a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a)}catch(e){console.error(e);st('Error: '+e.message,'error')}finally{state.converting=false;convertBtn.disabled=false;convertBtn.textContent='📥 Convert to PDF';progressBar.style.display='none'}}
 dropZone.addEventListener('click',()=>fileInput.click());
 dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')});
 dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
@@ -152,7 +152,7 @@ r();
 </html>`;
 
 const HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
